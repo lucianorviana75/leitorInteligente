@@ -2,10 +2,9 @@
 
 Aplicativo desktop desenvolvido com **Electron** para leitura e análise de arquivos.
 
----
-https://img.shields.io/badge/Electron-App-blue
----
-https://img.shields.io/badge/status-em%20desenvolvimento-green
+![Electron](https://img.shields.io/badge/Electron-App-blue)
+![Status](https://img.shields.io/badge/status-em%20desenvolvimento-green)
+
 
 ## 🚀 Funcionalidades
 
