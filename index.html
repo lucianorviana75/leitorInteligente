@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leitor Completo</title>
+
+<!-- PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+<!-- DOCX -->
+<script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
+
+<!-- EXEL -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial;
+  background: #0f172a;
+  color: white;
+}
+
+header {
+  background: #1e293b;
+  padding: 15px;
+  text-align: center;
+}
+
+.container {
+  padding: 15px;
+  text-align: center;
+}
+
+button {
+  padding: 10px;
+  margin: 5px;
+  border-radius: 8px;
+  border: none;
+  background: #22c55e;
+  color: white;
+  cursor: pointer;
+}
+
+input {
+  padding: 8px;
+  margin: 5px;
+  border-radius: 6px;
+  border: none;
+}
+
+canvas {
+  margin-top: 20px;
+  max-width: 100%;
+  border-radius: 10px;
+}
+
+#textoViewer {
+  padding: 10px;
+  background: #1e293b;
+  margin-top: 15px;
+  border-radius: 10px;
+  max-height: 300px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+}
+
+#resultadosBusca {
+  margin-top: 20px;
+  background: #1e293b;
+  padding: 10px;
+  border-radius: 10px;
+  max-height: 200px;
+  overflow: auto;
+}
+</style>
+</head>
+
+<body>
+
+<header>📖 Leitor Completo</header>
+
+<div class="container">
+
+<input type="file" id="fileInput">
+
+<br>
+
+<button onclick="prevPage()">⬅️</button>
+<span id="pageInfo">Página 0</span>
+<button onclick="nextPage()">➡️</button>
+
+<br>
+
+<button onclick="zoomOut()">➖</button>
+<button onclick="zoomIn()">➕</button>
+
+<br><br>
+
+<input id="pageSearch" placeholder="Ir para página">
+<button onclick="goToPage()">Ir</button>
+
+<br>
+
+<input id="textSearch" placeholder="Buscar palavra">
+<button onclick="buscarTexto()">🔍 Buscar</button>
+
+<div id="resultadosBusca"></div>
+
+<canvas id="pdfCanvas"></canvas>
+
+<div id="textoViewer"></div>
+
+<div id="excelViewer" style="
+  margin-top:20px;
+  background:#1e293b;
+  padding:10px;
+  border-radius:10px;
+  display:none;
+  overflow:auto;">
+</div>
+
+</div>
+
+
+<script>
+
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+"https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+let pdfDoc = null;
+let currentPage = 1;
+let scale = 1.5;
+let allText = [];
+
+const canvas = document.getElementById("pdfCanvas");
+const ctx = canvas.getContext("2d");
+
+// carregar arquivo
+document.getElementById("fileInput").addEventListener("change", async function(e){
+
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const nome = file.name.toLowerCase();
+  pdfDoc = null;
+  allText = [];
+
+  // PDF
+  if (nome.endsWith(".pdf")) {
+
+    const reader = new FileReader();
+
+    reader.onload = async function() {
+      const typedarray = new Uint8Array(this.result);
+      pdfDoc = await pdfjsLib.getDocument(typedarray).promise;
+
+      currentPage = 1;
+      renderPage();
+
+      // ✅ carregamento leve (apenas texto das páginas aos poucos)
+      for (let i = 1; i <= pdfDoc.numPages; i++) {
+        const page = await pdfDoc.getPage(i);
+        const content = await page.getTextContent();
+        const text = content.items.map(item => item.str).join(" ");
+        allText.push(text);
+
+        // evita travar celular
+        if (i % 10 === 0) await new Promise(r => setTimeout(r, 100));
+      }
+    };
+
+    reader.readAsArrayBuffer(file);
+  }
+
+  // DOCX
+  else if (nome.endsWith(".docx")) {
+
+    const reader = new FileReader();
+
+    reader.onload = function(event) {
+      mammoth.extractRawText({ arrayBuffer: event.target.result })
+        .then(function(result) {
+          const texto = result.value;
+          allText = [texto];
+          document.getElementById("textoViewer").innerText = texto;
+        });
+    };
+
+    reader.readAsArrayBuffer(file);
+  }
+
+  // TXT
+  else if (nome.endsWith(".txt")) {
+
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+      const texto = e.target.result;
+      allText = [texto];
+      document.getElementById("textoViewer").innerText = texto;
+    };
+
+    reader.readAsText(file);
+  }
+  // 📊 EXCEL (.xlsx)
+  else if (nome.endsWith(".xlsx")) {
+
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: "array" });
+
+        let htmlTabela = "";
+
+        workbook.SheetNames.forEach(nomeAba => {
+
+        const sheet = workbook.Sheets[nomeAba];
+        const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+        htmlTabela += `<h3>${nomeAba}</h3>`;
+        htmlTabela += `<table style="width:100%;border-collapse:collapse;">`;
+
+        json.forEach((linha, index) => {
+
+            htmlTabela += "<tr>";
+
+            linha.forEach(celula => {
+
+            if (index === 0) {
+                htmlTabela += `<th style="border:1px solid #444;padding:6px;background:#334155;">
+                ${celula || ""}
+                </th>`;
+            } else {
+                htmlTabela += `<td style="border:1px solid #444;padding:6px;">
+                ${celula || ""}
+                </td>`;
+            }
+
+            });
+
+            htmlTabela += "</tr>";
+        });
+
+        htmlTabela += "</table><br>";
+    });
+
+    // mostrar tabela
+    const viewer = document.getElementById("excelViewer");
+    viewer.innerHTML = htmlTabela;
+    viewer.style.display = "block";
+
+    // esconder outros
+    canvas.style.display = "none";
+    document.getElementById("textoViewer").style.display = "none";
+
+    // salvar como texto também (para busca)
+    let texto = "";
+
+    workbook.SheetNames.forEach(nomeAba => {
+      const sheet = workbook.Sheets[nomeAba];
+      const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+      json.forEach(linha => {
+        texto += linha.join(" ") + "\n";
+      });
+    });
+
+    allText = [texto];
+  };
+
+  reader.readAsArrayBuffer(file);
+}
+
+
+});
+
+// renderizar PDF
+async function renderPage() {
+  if (!pdfDoc) return;
+
+  const page = await pdfDoc.getPage(currentPage);
+  const viewport = page.getViewport({ scale });
+
+  canvas.height = viewport.height;
+  canvas.width = viewport.width;
+
+  await page.render({
+    canvasContext: ctx,
+    viewport: viewport
+  }).promise;
+
+  document.getElementById("pageInfo").innerText =
+    `Página ${currentPage} / ${pdfDoc.numPages}`;
+}
+
+// navegação
+function nextPage() {
+  if (pdfDoc && currentPage < pdfDoc.numPages) {
+    currentPage++;
+    renderPage();
+  }
+}
+
+function prevPage() {
+  if (pdfDoc && currentPage > 1) {
+    currentPage--;
+    renderPage();
+  }
+}
+
+// zoom
+function zoomIn() {
+  scale += 0.2;
+  renderPage();
+}
+
+function zoomOut() {
+  if (scale > 0.6) {
+    scale -= 0.2;
+    renderPage();
+  }
+}
+
+// ir para página
+function goToPage() {
+  const p = parseInt(document.getElementById("pageSearch").value);
+  if (pdfDoc && p >= 1 && p <= pdfDoc.numPages) {
+    currentPage = p;
+    renderPage();
+  }
+}
+
+// busca
+function buscarTexto() {
+
+  const termo = document.getElementById("textSearch").value.toLowerCase();
+  const divResultados = document.getElementById("resultadosBusca");
+
+  if (!termo) return;
+
+  let total = 0;
+  let resultadosHTML = "";
+
+  divResultados.innerHTML = "🔎 Buscando...";
+
+  for (let i = 0; i < allText.length; i++) {
+
+    const textoPagina = allText[i] || "";
+    const textoLower = textoPagina.toLowerCase();
+    let pos = 0;
+
+    while (true) {
+      const index = textoLower.indexOf(termo, pos);
+      if (index === -1) break;
+
+      total++;
+
+      const trecho = textoPagina.substring(index - 30, index + 30);
+
+      resultadosHTML += `
+        <div onclick="irParaPagina(${i + 1})"
+        style="padding:8px;border-bottom:1px solid #444;cursor:pointer;">
+        📄 Página ${i + 1}<br>
+        <small>...${trecho}...</small>
+        </div>
+      `;
+
+      pos = index + termo.length;
+    }
+  }
+
+  if (total === 0) {
+    divResultados.innerHTML = "❌ Não encontrado";
+    return;
+  }
+
+  divResultados.innerHTML =
+    `<b>✅ ${total} ocorrências</b><br><br>${resultadosHTML}`;
+}
+
+// ir para página
+function irParaPagina(pagina) {
+  if (pdfDoc) {
+    currentPage = pagina;
+    renderPage();
+  }
+}
+
+</script>
+
+</body>
+</html>
