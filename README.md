@@ -55,7 +55,7 @@ Baixe o instalador na seção **Releases** do projeto.
 ```bash
 npm install
 npm start
+-----------
+Preview 📸
 
-## 📸 Preview
 
-screenshots/app.png
