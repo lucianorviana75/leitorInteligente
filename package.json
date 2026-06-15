@@ -1,0 +1,32 @@
+{
+  "name": "app_leitor_inteligente",
+  "version": "1.0.0",
+  "description": "Leitor Inteligente",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lucianorviana75/leitorInteligente.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/lucianorviana75/leitorInteligente/issues"
+  },
+  "homepage": "https://github.com/lucianorviana75/leitorInteligente#readme",
+  "devDependencies": {
+    "electron": "^42.4.0",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.leitor.app",
+    "productName": "Leitor Completo",
+    "win": {
+      "target": "nsis"
+    }
+  }
+}
