@@ -4,6 +4,7 @@ Aplicativo desktop desenvolvido com **Electron** para leitura e análise de arqu
 
 ---
 https://img.shields.io/badge/Electron-App-blue
+---
 https://img.shields.io/badge/status-em%20desenvolvimento-green
 
 ## 🚀 Funcionalidades
