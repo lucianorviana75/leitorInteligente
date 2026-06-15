@@ -51,9 +51,9 @@ Baixe o instalador na seção **Releases** do projeto.
 ---
 
 ### 🔹 Opção 2 — Rodar manualmente
-bash
--npm install
--npm start
+bash --
+1°-npm install
+2°-npm start
 
 
 ## 📸 Preview
