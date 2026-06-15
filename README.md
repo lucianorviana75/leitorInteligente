@@ -53,6 +53,7 @@ Baixe o instalador na seção **Releases** do projeto.
 ### 🔹 Opção 2 — Rodar manualmente
 bash
 npm install
+#############
 npm start
 
 
