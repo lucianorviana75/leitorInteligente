@@ -53,7 +53,8 @@ Baixe o instalador na seção **Releases** do projeto.
 ### 🔹 Opção 2 — Rodar manualmente
 
 ## 📸 Preview
-screenshots/app.png
+![Preview do app](screenshots/app.png)
+
 ```bash
 npm install
 npm start
